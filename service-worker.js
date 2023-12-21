@@ -88,6 +88,7 @@ msgListener.popupListener.cmdListener = function(req) {
             break
 
         case "create_host":
+            if (KH.hostTab) return
             createKHTab(KH.pin).then((tab) => {
                 KH.hostTab = tab
             })

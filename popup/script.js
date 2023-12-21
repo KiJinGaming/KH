@@ -1,46 +1,37 @@
-async function createKHTab(pin) {
-    return await chrome.tabs.create({
-        url: `https://kahoot.it/?pin=${pin}`,
-        active: false
+function sendCommand(cmd) {
+    chrome.runtime.sendMessage({
+        sender: "popup",
+        type: "cmd",
+        cmd: cmd.cmd,
+        content: cmd.content
     })
 }
 
-async function sendInitRole(tabId, role) {
-    chrome.tabs.sendMessage(
-        tabId,
-        { role: role, cmd: "init" }
-    )
-}
 
 const pinElement = document.getElementById("pin")
-document.getElementById("create-tab").onclick = async function() {
+document.getElementById("set-pin").onclick = function() {
     let pin = pinElement.value
-    let newtab = await createKHTab(pin)
+    sendCommand({
+        cmd: "set_pin",
+        content: pin
+    })
+}
 
-    KH.onlineTabs.push(newtab)
-    sendInitRole(newtab.id, "client")
+document.getElementById("create-tab").onclick = async function() {
+    sendCommand({
+        cmd: "create_client"
+    })
 }
 
 const createHostElement = document.getElementById("create-host-tab")
 createHostElement.onclick = async function() {
-    if (KH.hostTab) return
-
-    let pin = pinElement.value
-    KH.hostTab = await createKHTab(pin)
-
-    sendInitRole(KH.hostTab.id, "host")
-    createHostElement.disabled = true
-    
-
+    sendCommand({
+        cmd: "create_host_client"
+    })
 }
 
-chrome.tabs.onUpdated.addListener(async function (tabId , info) {
-    if ( info.status === 'complete' && tabId === KH.hostTab.id) {
-        while (true){
-            await new Promise(res => {
-                setTimeout(res, 500)
-            })
-            chrome.tabs.sendMessage(KH.hostTab.id, {msg:"damn"})
-        }
-    }
-  })
+document.getElementById("reset").onclick = function() {
+    sendCommand({
+        cmd: "reset"
+    })
+}
