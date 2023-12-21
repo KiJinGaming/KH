@@ -1,15 +1,20 @@
 let KH = {
     clientTabs: [],
     hostTab: null,
-    pin: null
+    pin: null,
+
+    reset: function() {
+        this.clientTabs = []
+        this.hostTab = null
+        this.pin = null
+    }
 }
 
 let msgListener = {
     router: null,
     popupListener: {
         router: null,
-        cmdListener: null,
-        initListener: null
+        cmdListener: null
     },
     hostListener: {
         router: null,
@@ -19,9 +24,33 @@ let msgListener = {
 
 let msgSender = {
     client: {
-        inputSender: null
+        inputSender: null,
+        cmdSender: null,
+        sendToAllClients: null
+    },
+    host: {
+        cmdSender: null
     }
 }
+
+// GENERAL FUNC
+
+async function createKHTab(pin) {
+    return await chrome.tabs.create({
+        url: `https://kahoot.it/?pin=${pin}`,
+        active: false
+    })
+}
+
+function matchClientTabs(id) {
+    for (const tab of KH.clientTabs) {
+        if (tab.id === id) {
+            return tab
+        }
+    }
+    return null
+}
+
 // GENERAL ROUTER
 
 msgListener.router = function(req, sender, res) {
@@ -48,21 +77,27 @@ msgListener.popupListener.router = function(req) {
     }
 }
 
-msgListener.popupListener.initListener = function(req) {
-    if (req.content === "reset") {
-        KH.clientTabs = []
-        KH.hostTab = null
-        KH.pin = null
-    } else if (req.content.match(/^pin=/)) {
-        KH.pin = req.content.match(/^pin=(\d+)/)[1]
-    }
-}
-
 msgListener.popupListener.cmdListener = function(req) {
-    if (req.content === "create_host") {
-        
-    } else if (req.content === "create_client") {
+    switch (req.cmd) {
+        case "reset":
+            KH.reset()
+            break
 
+        case "set_pin":
+            KH.pin = req.content
+            break
+
+        case "create_host":
+            createKHTab(KH.pin).then((tab) => {
+                KH.hostTab = tab
+            })
+            break
+
+        case "create_client":
+            createKHTab(KH.pin).then((tab) => {
+                KH.clientTabs.push(tab)
+            })
+            break
     }
 }
 
@@ -76,10 +111,61 @@ msgListener.hostListener.router = function(req) {
     }
 }
 
+msgListener.hostListener.inputListener = function(req) {
+    msgSender.client.inputSender(req)
+}
+
+
+//MSG SENDER
+
+msgSender.client.sendToAllClients = function(req) {
+    return KH.clientTabs.forEach(tab => {
+        tab.sendMessage(req)
+    })
+}
+
+msgSender.client.cmdSender = function(cmd) {
+    this.sendToAllClients({
+        sender: "sw",
+        type: "cmd",
+        cmd: cmd.cmd,
+        content: cmd.content
+    })
+}
+
+msgSender.host.cmdSender = function(cmd) {
+    KH.hostTab.sendMessage({
+        sender: "sw",
+        type: "cmd",
+        cmd: cmd.cmd,
+        content: cmd.content
+    })
+}
 
 // Send to all tabs
 msgSender.client.inputSender = function(input) {
-
+    this.sendToAllClients({
+        sender: "sw",
+        type: "input",
+        input: input.input,
+    })
 }
 
 chrome.runtime.onMessage.addListener(msgListener)
+
+//Enable, disable content script
+
+chrome.tabs.onUpdated.addListener(function(tabId, info) {
+    if (info.status !== "complete") return
+    if (KH.hostTab && tabId === KH.hostTab.id) {
+        msgSender.host.cmdSender({
+            cmd: "set_role",
+            content: "host"
+        })
+    } else if (matchClientTabs(tabId)) {
+        msgSender.client.cmdSender({
+            cmd: "set_role",
+            content: "client"
+        })
+    }
+})
