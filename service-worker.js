@@ -4,9 +4,9 @@ let KH = {
     pin: null,
 
     reset: function() {
-        this.clientTabs = []
-        this.hostTab = null
-        this.pin = null
+        KH.clientTabs = []
+        KH.hostTab = null
+        KH.pin = null
     }
 }
 
@@ -56,10 +56,10 @@ function matchClientTabs(id) {
 msgListener.router = function(req, sender, res) {
     switch (req.sender) {
         case "popup":
-            this.popupListener.router(req)
+            msgListener.popupListener.router(req)
             break;
         case "host":
-            this.hostListener.router(req)
+            msgListener.hostListener.router(req)
             break;
     }
 }
@@ -69,10 +69,10 @@ msgListener.router = function(req, sender, res) {
 msgListener.popupListener.router = function(req) {
     switch (req.type) {
         case "cmd":
-            this.cmdListener(req)
+            msgListener.popupListener.cmdListener(req)
             break;
         case "init":
-            this.initListener(req)
+            msgListener.popupListener.initListener(req)
             break;
     }
 }
@@ -108,7 +108,7 @@ msgListener.popupListener.cmdListener = function(req) {
 msgListener.hostListener.router = function(req) {
     switch (req.type) {
         case "input":
-            this.inputListener(req)
+            msgListener.hostListener.inputListener(req)
     }
 }
 
@@ -126,7 +126,7 @@ msgSender.client.sendToAllClients = function(req) {
 }
 
 msgSender.client.cmdSender = function(cmd) {
-    this.sendToAllClients({
+    msgSender.client.sendToAllClients({
         sender: "sw",
         type: "cmd",
         cmd: cmd.cmd,
@@ -145,14 +145,14 @@ msgSender.host.cmdSender = function(cmd) {
 
 // Send to all tabs
 msgSender.client.inputSender = function(input) {
-    this.sendToAllClients({
+    msgSender.client.sendToAllClients({
         sender: "sw",
         type: "input",
         input: input.input,
     })
 }
 
-chrome.runtime.onMessage.addListener(msgListener)
+chrome.runtime.onMessage.addListener(msgListener.router)
 
 //Enable, disable content script
 
@@ -170,3 +170,15 @@ chrome.tabs.onUpdated.addListener(function(tabId, info) {
         })
     }
 })
+
+// chrome.runtime.connectNative()
+
+async function f() {
+    while (true) {
+        await new Promise(res => {
+            setTimeout(res, 500)
+        })
+        console.log("DMs")
+    }
+}
+f()
