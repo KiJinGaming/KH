@@ -26,7 +26,7 @@ document.getElementById("create-tab").onclick = async function() {
 const createHostElement = document.getElementById("create-host-tab")
 createHostElement.onclick = async function() {
     sendCommand({
-        cmd: "create_host_client"
+        cmd: "create_host"
     })
 }
 
