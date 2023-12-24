@@ -49,7 +49,8 @@ const KH_DB = {
         return Promise.all([
             this.setPin(""),
             this.setHost(""),
-            this.clearClients()
+            this.clearClients(),
+            this.sessionStorage.set({ init: true})
         ])
     },
 
@@ -57,7 +58,6 @@ const KH_DB = {
     async storageGet(key) {
         if (!this.DB_Init && !(await this.sessionStorage.get("init")).init) {
             await this.reset()
-            this.sessionStorage.set({ init: true })
             this.DB_Init = true
         }
         return this.sessionStorage.get(key)
