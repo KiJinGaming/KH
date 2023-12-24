@@ -1,3 +1,4 @@
+(function() {
 const ROLE = "host"
 let ACTIVE = true
 let INIT = false
@@ -60,3 +61,4 @@ function msgListener(req, sender, sendRes) {
 }
 
 chrome.runtime.onMessage.addListener(msgListener)
+})()

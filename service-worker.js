@@ -262,6 +262,7 @@ msgSender.client.inputSender = function(input) {
         sender: "sw",
         type: "input",
         input: input.input,
+        content: input.content
     })
 }
 
