@@ -46,13 +46,11 @@ const KH_DB = {
     },
 
     reset() {
-        return new Promise((resolve) => {
-            Promise.all([
-                this.setPin(""),
-                this.setHost(""),
-                this.clearClients()
-            ]).then(resolve)
-        })
+        return Promise.all([
+            this.setPin(""),
+            this.setHost(""),
+            this.clearClients()
+        ])
     },
 
     // GET
