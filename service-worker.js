@@ -247,8 +247,8 @@ msgSender.client.cmdSender = function(cmd) {
     })
 }
 
-msgSender.host.cmdSender = function(cmd) {
-    KH.hostTab.sendMessage({
+msgSender.host.cmdSender = async function(cmd) {
+    chrome.tabs.sendMessage(await KH.getHostId(), {
         sender: "sw",
         type: "cmd",
         cmd: cmd.cmd,
@@ -272,8 +272,8 @@ chrome.runtime.onMessage.addListener(msgListener.router)
 
 chrome.tabs.onUpdated.addListener(async function(tabId, info) {
     if (info.status !== "complete") return
-    let hostTab = KH.getHost()
-    if (hostTab && tabId == hostTab.id) {
+    let hostTabId = await KH.getHostId()
+    if (tabId == hostTabId) {
         msgSender.host.cmdSender({
             cmd: "set_role",
             content: "host"
@@ -289,7 +289,7 @@ chrome.tabs.onUpdated.addListener(async function(tabId, info) {
 
 // Listen for tab close
 chrome.tabs.onRemoved.addListener(async function(tabId) {
-    if (tabId == KH.getHost().id) {
+    if (tabId == await KH.getHostId()) {
         KH.setHost("")
     } else if (await matchClientTabIds(tabId)) {
         KH.rmClient(tabId)
