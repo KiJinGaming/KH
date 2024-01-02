@@ -4,6 +4,8 @@
 //     pin: null,
 // }
 
+const DELAY = 100 // ms
+
 let msgListener = {
     router: null,
     popupListener: {
@@ -145,6 +147,10 @@ KH.getClients = async function() {
 
 // GENERAL FUNC
 
+function sleep(ms) {
+    return new Promise(res => setTimeout(res, ms))
+}
+
 async function createKHTab(pin) {
     return await chrome.tabs.create({
         url: `https://kahoot.it/?pin=${pin}`,
@@ -224,17 +230,22 @@ msgListener.hostListener.router = function(req) {
 }
 
 msgListener.hostListener.inputListener = function(req) {
-    msgSender.client.inputSender(req)
+    msgSender.client.inputSender(req).then(async () => {
+        chrome.tabs.update(await KH.getHostId(), { active: true })
+    })
 }
 
 
 //MSG SENDER
 
-msgSender.client.sendToAllClients = function(msg) {
-    return KH.getClients().then((clients) => {
-        clients.forEach(tab => {
+msgSender.client.sendToAllClients = function(msg, hook) {
+    return KH.getClients().then(async (clients) => {
+        for (const tab of clients) {
+            if (hook) {
+                await hook(tab)
+            }
             chrome.tabs.sendMessage(tab.id, msg)
-        })
+        }
     })
 }
 
@@ -258,11 +269,16 @@ msgSender.host.cmdSender = async function(cmd) {
 
 // Send input to all tabs
 msgSender.client.inputSender = function(input) {
-    msgSender.client.sendToAllClients({
+    return msgSender.client.sendToAllClients({
         sender: "sw",
         type: "input",
         input: input.input,
         content: input.content
+    }, async function(tab) {
+        return Promise.all([
+            sleep(DELAY),
+            chrome.tabs.update(tab.id, { active: true })
+        ])
     })
 }
 
