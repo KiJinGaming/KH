@@ -200,12 +200,14 @@ msgListener.popupListener.cmdListener = async function(req) {
         case "create_host":
             createKHTab(await KH.getPin()).then((tab) => {
                 KH.setHost(tab.id)
+                chrome.tabs.update(tab.id, {autoDiscardable: false})
             })
             break
 
         case "create_client":
             createKHTab(await KH.getPin()).then((tab) => {
                 KH.addClient(tab.id)
+                chrome.tabs.update(tab.id, {autoDiscardable: false})
             })
             break
     }
